@@ -1,4 +1,4 @@
-import { ChangeEventHandler, Fragment, MouseEventHandler, useState } from "react";
+import { ChangeEventHandler, MouseEventHandler, useState } from "react";
 import './App.css';
 
 interface Status {
@@ -13,9 +13,11 @@ interface Status {
   intelligence: number;
 }
 
-const StatusKeys: (keyof Status)[] = ['speed', 'stamina', 'power', 'sprit', 'intelligence'];
+type StatusKey = keyof Status;
 
-const StatusColors: Record<keyof Status, string> = {
+const StatusKeys: StatusKey[] = ['speed', 'stamina', 'power', 'sprit', 'intelligence'];
+
+const StatusColors: Record<StatusKey, string> = {
   speed: '#58aef8',
   stamina: '#ee7b67',
   power: '#f2a940',
@@ -23,11 +25,66 @@ const StatusColors: Record<keyof Status, string> = {
   intelligence: '#55bc81',
 };
 
+type Location = 'Kyoto' | 'Tokyo' | 'Nakayama' | 'Hanshin';
+
+const TrackName: Record<Location, string> = {
+  Kyoto: '京都',
+  Tokyo: '東京',
+  Nakayama: '中山',
+  Hanshin: '阪神',
+};
+
+type Grade = 'Debut' | 'GI' | 'GII' | 'GIII';
+
+type Surface = 'turf' | 'dirt';
+
+type Track = 'left-handled' | 'right-handed';
+
+type Side = 'inner' | 'outer' | 'full';
+
+interface Race {
+  turn: number;
+  title: string;
+  grade: Grade;
+  location: Location;
+  surface: Surface;
+  distance: number;
+  track: Track;
+  side: Side;
+  fullGate: number;
+}
+
+const KnownRaces: Race[] = [
+  {
+    turn: 12,
+    title: 'ジュニア級メイクデビュー',
+    grade: 'Debut',
+    location: 'Hanshin',
+    surface: 'turf',
+    distance: 2000,
+    track: 'right-handed',
+    side: 'inner',
+    fullGate: 9,
+  },
+];
+
 const Actions = ['Speed', 'Stamina', 'Power', 'Sprit', 'Intelligence', 'Rest', 'Hospital', 'Race'];
 type Action = typeof Actions[number];
 
+type Prediction = 'triangle' | 'black-triangle' | 'circle' | 'double-circle';
+
+const PredictionMarks: Record<Prediction, string> = {
+  triangle: '△',
+  "black-triangle": '▲',
+  circle: '○',
+  "double-circle": '◎',
+};
+
+
 interface Turn extends Status {
   action: Action;
+
+  predictions: Record<string, Record<StatusKey, Prediction>>;
 }
 
 const races = [12, 27, 34, 44, 56];
@@ -35,7 +92,7 @@ const totalTurns = 58;
 
 function NumberInput({ className, value, onChange }: { className?: string, value: number, onChange: (value: number) => void; }) {
   const handleChange: ChangeEventHandler<HTMLInputElement> = e => {
-    onChange(e.target.valueAsNumber);
+    onChange(e.target.valueAsNumber ?? 0);
   };
 
   const handleMinusClick: MouseEventHandler<HTMLButtonElement> = e => {
@@ -79,7 +136,7 @@ function NumberInput({ className, value, onChange }: { className?: string, value
   return (
     <div style={{ display: 'flex', flexDirection: 'row' }}>
       <button disabled={value === 0} onClick={handleMinusClick} >-</button>
-      <input className={className} style={{ flexGrow: 1, textAlign: 'center' }} type="number" value={value} onChange={handleChange} />
+      <input className={className} style={{ flexGrow: 1, textAlign: 'center' }} type="number" min={0} value={value} onChange={handleChange} />
       <button onClick={handlePlusClick}>+</button>
     </div>
   );
@@ -134,10 +191,26 @@ function findPreviousTurn(turns: Turn[], index: number) {
   return undefined;
 }
 
+function Race({ turn, race }: { turn: Turn, race: Race; }) {
+  return (
+    <>
+      <tr>
+        <td colSpan={3} rowSpan={2} />
+        <td colSpan={6}>{race.title}</td>
+      </tr>
+      <tr>
+        <td>Prediction</td>
+        {StatusKeys.map(key => (
+          <td key={key}>{turn.predictions[race.title]?.[key]}</td>
+        ))}
+      </tr>
+    </>
+  );
+}
+
 function Row({ turns, normalized, index, onChange }: { turns: Turn[], normalized: boolean, index: number, onChange: (status: Turn[]) => void; }) {
   let current!: Turn;
   let isPlaceholder!: boolean;
-
   if (turns[index]) {
     current = turns[index];
     isPlaceholder = false;
@@ -152,6 +225,7 @@ function Row({ turns, normalized, index, onChange }: { turns: Turn[], normalized
     onChange(copy);
   };
 
+  let rowSpan = 1;
   let bars: JSX.Element | null = null;
   if (!isPlaceholder) {
     let sum = StatusKeys.reduce((value, key) => value + current[key], 0);
@@ -164,6 +238,7 @@ function Row({ turns, normalized, index, onChange }: { turns: Turn[], normalized
           ))}
         </div >
       );
+      rowSpan += 1;
 
       if (!normalized) {
         let max = 0;
@@ -195,16 +270,35 @@ function Row({ turns, normalized, index, onChange }: { turns: Turn[], normalized
     }
   }
 
+  const isRace = races.includes(index);
+
+  const [expanded, setExpanded] = useState(false);
+  const handleExpandClick: MouseEventHandler<HTMLButtonElement> = e => {
+    setExpanded(value => !value);
+  };
+
+  let race: JSX.Element[] | null = null;
+  if (expanded) {
+    race = KnownRaces.filter(race => race.turn === index).map(race => (
+      <Race key={race.title} turn={current} race={race} />
+    ));
+  }
+
   return (
-    <Fragment>
+    <>
       <tr>
-        <td rowSpan={bars ? 2 : 1}>{index}</td>
-        <td rowSpan={bars ? 2 : 1}>{races[races.findIndex(x => x >= index)] - index}</td>
-        <td rowSpan={bars ? 2 : 1}>
+        <td rowSpan={rowSpan}>
+          {KnownRaces.some(race => race.turn === index) && (
+            <button style={{ width: 20, height: 20, padding: 0, textAlign: 'center', lineHeight: '18px' }} onClick={handleExpandClick}>{expanded ? '-' : '+'}</button>
+          )}
+        </td>
+        <td rowSpan={rowSpan}>{index}</td>
+        <td rowSpan={rowSpan}>{races[races.findIndex(x => x >= index)] - index}</td>
+        <td rowSpan={rowSpan}>
           {index !== 0 && (
             <select
               disabled={races.includes(index)}
-              value={races.includes(index) ? 'Race' : isPlaceholder ? '' : current.action}
+              value={isRace ? 'Race' : isPlaceholder ? '' : current.action}
               onChange={e => handleStateChange({ ...current, action: e.currentTarget.value })}
             >
               <option disabled value=""></option>
@@ -221,7 +315,8 @@ function Row({ turns, normalized, index, onChange }: { turns: Turn[], normalized
         ))}
       </tr>
       {bars}
-    </Fragment>
+      {race}
+    </>
   );
 }
 
@@ -240,6 +335,7 @@ const initialData: Turn[] = getLocalStorageJson<Turn[]>('status') ?? [{
   power: 0,
   sprit: 0,
   intelligence: 0,
+  predictions: {},
 }];
 
 function App() {
@@ -261,6 +357,7 @@ function App() {
       <table>
         <thead>
           <tr>
+            <td></td>
             <td>Turn</td>
             <td>Next race</td>
             <td>Action</td>
