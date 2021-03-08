@@ -1,4 +1,4 @@
-import { ChangeEvent, Fragment, useState } from 'react';
+import { ChangeEventHandler, Fragment, MouseEventHandler, useState } from "react";
 import './App.css';
 
 interface Status {
@@ -33,18 +33,69 @@ interface Turn extends Status {
 const races = [12, 27, 34, 44, 56];
 const totalTurns = 58;
 
-function StateInput<T extends Status>({ status, isPlaceholder, id, onChange }: { status: T, isPlaceholder: boolean, id: keyof Status, onChange: (status: T) => void; }) {
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+function NumberInput({ className, value, onChange }: { className?: string, value: number, onChange: (value: number) => void; }) {
+  const handleChange: ChangeEventHandler<HTMLInputElement> = e => {
+    onChange(e.target.valueAsNumber);
+  };
+
+  const handleMinusClick: MouseEventHandler<HTMLButtonElement> = e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let delta: number;
+    switch (e.button) {
+      case 0:
+        delta = 1;
+        break;
+      case 1:
+        delta = 5;
+        break;
+      default:
+        return;
+    }
+
+    onChange(Math.max(value - delta, 0));
+  };
+
+  const handlePlusClick: MouseEventHandler<HTMLButtonElement> = e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let delta: number;
+    switch (e.button) {
+      case 0:
+        delta = 1;
+        break;
+      case 1:
+        delta = 5;
+        break;
+      default:
+        return;
+    }
+
+    onChange(value + delta);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'row' }}>
+      <button disabled={value === 0} onClick={handleMinusClick} >-</button>
+      <input className={className} style={{ flexGrow: 1, textAlign: 'center' }} type="number" value={value} onChange={handleChange} />
+      <button onClick={handlePlusClick}>+</button>
+    </div>
+  );
+}
+
+function StatusInput<T extends Status>({ status, isPlaceholder, id, onChange }: { status: T, isPlaceholder: boolean, id: keyof Status, onChange: (status: T) => void; }) {
+  const handleChange = (value: number) => {
     onChange({
       ...status,
-      [id]: e.target.valueAsNumber || 0,
+      [id]: value,
     });
   };
 
   return (
-    <input
+    <NumberInput
       className={isPlaceholder ? 'placeholder' : ''}
-      type="number"
       value={status[id]}
       onChange={handleChange}
     />
@@ -148,7 +199,7 @@ function Row({ turns, normalized, index, onChange }: { turns: Turn[], normalized
     <Fragment>
       <tr>
         <td rowSpan={bars ? 2 : 1}>{index}</td>
-        <td rowSpan={bars ? 2 : 1}>{races[races.findIndex(x => x < index) + 1] - index}</td>
+        <td rowSpan={bars ? 2 : 1}>{races[races.findIndex(x => x >= index)] - index}</td>
         <td rowSpan={bars ? 2 : 1}>
           {index !== 0 && (
             <select
@@ -165,7 +216,7 @@ function Row({ turns, normalized, index, onChange }: { turns: Turn[], normalized
         </td>
         {StatusKeys.map(key => (
           <td>
-            <StateInput status={current} isPlaceholder={isPlaceholder} id={key} onChange={handleStateChange} />
+            <StatusInput status={current} isPlaceholder={isPlaceholder} id={key} onChange={handleStateChange} />
           </td>
         ))}
       </tr>
