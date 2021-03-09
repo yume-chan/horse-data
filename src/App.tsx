@@ -159,17 +159,21 @@ function StatusInput<T extends Status>({ status, isPlaceholder, id, onChange }: 
   );
 }
 
-function Bar({ current, previous, id, sum, color }: { current: Status, previous: Status | undefined, id: keyof Status, sum: number, color: string, }) {
-  const delta = previous ? (() => {
-    let delta = current[id] - previous[id];
-    if (delta > 0) {
-      return '+' + delta;
-    }
-    if (delta < 0) {
-      return delta;
-    }
+function formatDelta(delta: number): string {
+  if (delta < 0) {
+    return delta.toString();
+  }
+  if (delta === 0) {
     return '';
-  })() : '';
+  }
+  if (delta > 0) {
+    return `+${delta}`;
+  }
+  return '';
+}
+
+function Bar({ current, previous, id, sum, color }: { current: Status, previous: Status | undefined, id: keyof Status, sum: number, color: string, }) {
+  const delta = previous ? formatDelta(current[id] - previous[id]) : '';
 
   const percent = current[id] / sum;
 
