@@ -27,6 +27,7 @@ const StatusColors: Record<StatusKey, string> = {
 
 type Location = 'Kyoto' | 'Tokyo' | 'Nakayama' | 'Hanshin';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TrackName: Record<Location, string> = {
   Kyoto: '京都',
   Tokyo: '東京',
@@ -73,6 +74,7 @@ type Action = typeof Actions[number];
 
 type Prediction = 'triangle' | 'black-triangle' | 'circle' | 'double-circle';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PredictionMarks: Record<Prediction, string> = {
   triangle: '△',
   "black-triangle": '▲',
@@ -195,6 +197,7 @@ function findPreviousTurn(turns: Turn[], index: number) {
   return undefined;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 function Race({ turn, race }: { turn: Turn, race: Race; }) {
   return (
     <>
