@@ -69,7 +69,7 @@ const KnownRaces: Race[] = [
   },
 ];
 
-const Actions = ['Speed', 'Stamina', 'Power', 'Sprit', 'Intelligence', 'Rest', 'Hospital', 'Race'];
+const Actions = ['Rest', 'Speed', 'Stamina', 'Power', 'Sprit', 'Intelligence', 'Hospital', 'Outing', 'Race'];
 type Action = typeof Actions[number];
 
 type Prediction = 'triangle' | 'black-triangle' | 'circle' | 'double-circle';
